@@ -66,8 +66,7 @@ public class MainActivity extends Activity {
             new Slot("Netflix", new String[]{"com.netflix.ninja"}, 0xFFB71C1C),
             new Slot("Prime Video", new String[]{"com.amazon.amazonvideo.livingroom"}, 0xFF1A98FF),
             new Slot("Hotstar", new String[]{"in.startv.hotstar"}, 0xFF1F3C88),
-            new Slot("JioCinema", new String[]{"com.jio.media.ondemand"}, 0xFFD81B60),
-            new Slot("Sony LIV", new String[]{"com.sonyliv"}, 0xFF6A1B9A)
+            new Slot("Camera View", new String[]{"com.kapron.ap.aicamview.tv"}, 0xFF0288D1)
     };
     private static final Slot KODI = new Slot("Kodi", new String[]{"org.xbmc.kodi"}, 0xFF1A6FA8);
 
@@ -118,7 +117,7 @@ public class MainActivity extends Activity {
         root.addView(wallA, match);
         root.addView(wallB, match);
 
-        // Apple TV subtle vignette
+        // Apple TV subtle backdrop vignette
         View scrim = new View(this);
         GradientDrawable sg = new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,
                 new int[]{0x22000000, 0x88000000});
@@ -161,7 +160,7 @@ public class MainActivity extends Activity {
 
         // Apple TV Modal "Apps" Folder Overlay
         folderOverlay = new FrameLayout(this);
-        folderOverlay.setBackgroundColor(0xD90E0E12); // Deep translucent tvOS blur shade
+        folderOverlay.setBackgroundColor(0xD90E0E12);
         folderOverlay.setVisibility(View.GONE);
         folderOverlay.setClickable(true);
         folderOverlay.setFocusable(false);
@@ -298,7 +297,7 @@ public class MainActivity extends Activity {
         Set<String> used = new HashSet<String>();
         used.add(getPackageName());
 
-        // 1. Build the Primary Apple TV Dock (pinned streaming apps)
+        // 1. Build Primary Dock
         for (Slot s : DOCK) {
             dock.addView(slotCell(s, 86, used));
         }
@@ -325,7 +324,7 @@ public class MainActivity extends Activity {
 
         // 3. Populate Modal App Library
         List<View> folderCells = new ArrayList<View>();
-        folderCells.add(slotCell(KODI, 72, used)); // Kodi included inside Library if not in dock
+        folderCells.add(slotCell(KODI, 72, used));
 
         for (final AppEntry e : apps) {
             folderCells.add(cell(e.label, e.info.loadIcon(pm), 72, false, new Runnable() {
@@ -352,7 +351,7 @@ public class MainActivity extends Activity {
             row.addView(folderCells.get(n));
         }
 
-        // 4. Append the "Apps" Folder tile to the end of the Dock
+        // 4. Append the "Apps" Folder tile to the Dock
         appsFolderTile = cell("Apps", folderTileIcon(), 86, false, new Runnable() {
             @Override
             public void run() {
@@ -455,12 +454,10 @@ public class MainActivity extends Activity {
         Bitmap b = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
         Canvas cv = new Canvas(b);
 
-        // Apple TV frosted app-folder tile background
         Paint bgPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         bgPaint.setColor(0x40FFFFFF);
         cv.drawRoundRect(new RectF(0, 0, size, size), 42, 42, bgPaint);
 
-        // 3x3 App Drawer icon matrix
         Paint dotPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         dotPaint.setColor(0xEEFFFFFF);
         float radius = 10f;
