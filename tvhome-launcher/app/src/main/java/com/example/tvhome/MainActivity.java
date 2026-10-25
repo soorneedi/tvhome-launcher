@@ -44,7 +44,7 @@ public class MainActivity extends Activity {
 
     private static final long ROTATE_MS = 10 * 60 * 1000L;
     private static final long FADE_MS = 3000L;
-    private static final long RAM_UPDATE_MS = 3000L; // Update RAM every 3 seconds
+    private static final long RAM_UPDATE_MS = 3000L;
     private static final int FOLDER_COLS = 6;
     private static final int CELL_W_DP = 130;
 
@@ -127,7 +127,7 @@ public class MainActivity extends Activity {
         ViewGroup.LayoutParams match = new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
 
-        // Wallpapers
+        // Rotating background layers
         wallA = newWall();
         wallB = newWall();
         wallB.setAlpha(0f);
@@ -135,7 +135,7 @@ public class MainActivity extends Activity {
         root.addView(wallA, match);
         root.addView(wallB, match);
 
-        // Apple TV subtle backdrop vignette
+        // Apple TV backdrop vignette
         View scrim = new View(this);
         GradientDrawable sg = new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,
                 new int[]{0x22000000, 0x88000000});
@@ -148,7 +148,7 @@ public class MainActivity extends Activity {
         col.setPadding(dp(56), dp(36), dp(56), dp(40));
         noClip(col);
 
-        // Top Status Bar (RAM Pill on left of clock, Clock on far right)
+        // Top Status Bar (RAM Pill on the left, Clock on the far right)
         LinearLayout statusBar = new LinearLayout(this);
         statusBar.setOrientation(LinearLayout.HORIZONTAL);
         statusBar.setGravity(Gravity.CENTER_VERTICAL);
@@ -178,7 +178,7 @@ public class MainActivity extends Activity {
 
         col.addView(statusBar, sblp);
 
-        // Center / Bottom Dock Container
+        // Dock Container
         dock = new LinearLayout(this);
         dock.setOrientation(LinearLayout.HORIZONTAL);
         dock.setGravity(Gravity.CENTER);
@@ -244,7 +244,7 @@ public class MainActivity extends Activity {
         populate();
         handler.removeCallbacks(rotateTask);
         handler.postDelayed(rotateTask, ROTATE_MS);
-        
+
         handler.removeCallbacks(ramTask);
         handler.post(ramTask);
     }
@@ -284,11 +284,11 @@ public class MainActivity extends Activity {
         ramView.setText(String.format(Locale.US, "RAM %.1f / %.1f GB (%d%%)", usedGb, totalGb, pct));
 
         if (pct >= 90) {
-            ramView.setTextColor(0xFFFF5252); // Alert red
+            ramView.setTextColor(0xFFFF5252);
         } else if (pct >= 80) {
-            ramView.setTextColor(0xFFFFD740); // Warning amber
+            ramView.setTextColor(0xFFFFD740);
         } else {
-            ramView.setTextColor(0xEEFFFFFF); // Clean white
+            ramView.setTextColor(0xEEFFFFFF);
         }
     }
 
@@ -463,26 +463,29 @@ public class MainActivity extends Activity {
         final LinearLayout c = new LinearLayout(this);
         c.setOrientation(LinearLayout.VERTICAL);
         c.setGravity(Gravity.CENTER_HORIZONTAL);
-        c.setPadding(dp(8), dp(10), dp(8), dp(8));
+        c.setPadding(dp(10), dp(10), dp(10), dp(8));
         c.setFocusable(true);
         c.setClickable(true);
 
+        // Uniform squircle icon container
         ImageView iv = new ImageView(this);
-        iv.setImageDrawable(icon);
+        iv.setImageDrawable(maskToSquircle(icon, iconDp, 18));
         iv.setScaleType(ImageView.ScaleType.FIT_CENTER);
         c.addView(iv, new LinearLayout.LayoutParams(dp(iconDp), dp(iconDp)));
 
-        TextView tv = new TextView(this);
+        // Clean typography
+        final TextView tv = new TextView(this);
         tv.setText(label);
-        tv.setTextColor(Color.WHITE);
-        tv.setTextSize(13);
+        tv.setTextColor(0xDDFFFFFF);
+        tv.setTextSize(12);
         tv.setSingleLine(true);
         tv.setEllipsize(TextUtils.TruncateAt.END);
         tv.setGravity(Gravity.CENTER);
-        tv.setShadowLayer(4, 0, 1, 0xCC000000);
+        tv.setShadowLayer(4, 0, 1, 0x99000000);
+
         LinearLayout.LayoutParams tlp = new LinearLayout.LayoutParams(
-                dp(CELL_W_DP - 16), ViewGroup.LayoutParams.WRAP_CONTENT);
-        tlp.topMargin = dp(6);
+                dp(CELL_W_DP - 12), ViewGroup.LayoutParams.WRAP_CONTENT);
+        tlp.topMargin = dp(8);
         c.addView(tv, tlp);
 
         c.setAlpha(dim ? 0.45f : 1f);
@@ -495,13 +498,15 @@ public class MainActivity extends Activity {
                 action.run();
             }
         });
+
         c.setOnFocusChangeListener(new View.OnFocusChangeListener() {
             @Override
             public void onFocusChange(View v, boolean has) {
-                float s = has ? 1.15f : 1f;
-                v.animate().scaleX(s).scaleY(s).setDuration(120).start();
-                v.setBackground(has ? round(0x44FFFFFF, dp(18)) : null);
-                v.setAlpha(dim ? (has ? 0.85f : 0.45f) : 1f);
+                float s = has ? 1.14f : 1f;
+                v.animate().scaleX(s).scaleY(s).translationZ(has ? dp(6) : 0).setDuration(130).start();
+                v.setBackground(has ? round(0x38FFFFFF, dp(22)) : null);
+                tv.setTextColor(has ? Color.WHITE : 0xDDFFFFFF);
+                v.setAlpha(dim ? (has ? 0.9f : 0.45f) : 1f);
             }
         });
         return c;
@@ -509,22 +514,43 @@ public class MainActivity extends Activity {
 
     // ---------------------------------------------------------------- graphics & tiles
 
+    private Drawable maskToSquircle(Drawable originalIcon, int sizeDp, int cornerRadiusDp) {
+        int px = dp(sizeDp);
+        Bitmap output = Bitmap.createBitmap(px, px, Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(output);
+
+        Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        RectF rect = new RectF(0, 0, px, px);
+
+        paint.setColor(0x2AFFFFFF);
+        canvas.drawRoundRect(rect, dp(cornerRadiusDp), dp(cornerRadiusDp), paint);
+
+        if (originalIcon != null) {
+            int pad = dp(10);
+            originalIcon.setBounds(pad, pad, px - pad, px - pad);
+            originalIcon.draw(canvas);
+        }
+
+        return new BitmapDrawable(getResources(), output);
+    }
+
     private Drawable folderTileIcon() {
-        int size = 192;
-        Bitmap b = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
+        int px = dp(86);
+        Bitmap b = Bitmap.createBitmap(px, px, Bitmap.Config.ARGB_8888);
         Canvas cv = new Canvas(b);
 
         Paint bgPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         bgPaint.setColor(0x40FFFFFF);
-        cv.drawRoundRect(new RectF(0, 0, size, size), 42, 42, bgPaint);
+        cv.drawRoundRect(new RectF(0, 0, px, px), dp(18), dp(18), bgPaint);
 
         Paint dotPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        dotPaint.setColor(0xEEFFFFFF);
-        float radius = 10f;
-        float[] coords = {54f, 96f, 138f};
-        for (float x : coords) {
-            for (float y : coords) {
-                cv.drawCircle(x, y, radius, dotPaint);
+        dotPaint.setColor(0xF0FFFFFF);
+        float radius = dp(3.5f);
+        float step = px / 4f;
+
+        for (int i = 1; i <= 3; i++) {
+            for (int j = 1; j <= 3; j++) {
+                cv.drawCircle(i * step, j * step, radius, dotPaint);
             }
         }
         return new BitmapDrawable(getResources(), b);
