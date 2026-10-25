@@ -66,8 +66,7 @@ public class MainActivity extends Activity {
             new Slot("Netflix", new String[]{"com.netflix.ninja"}, 0xFFB71C1C),
             new Slot("Prime Video", new String[]{"com.amazon.amazonvideo.livingroom"}, 0xFF1A98FF),
             new Slot("Hotstar", new String[]{"in.startv.hotstar"}, 0xFF1F3C88),
-            new Slot("JioCinema", new String[]{"com.jio.media.ondemand"}, 0xFFD81B60),
-            new Slot("Sony LIV", new String[]{"com.sonyliv"}, 0xFF6A1B9A)
+            new Slot("Camera View", new String[]{"com.kapron.ap.aicamview.tv"}, 0xFF0288D1)
     };
     private static final Slot KODI = new Slot("Kodi", new String[]{"org.xbmc.kodi"}, 0xFF1A6FA8);
 
@@ -118,7 +117,7 @@ public class MainActivity extends Activity {
         root.addView(wallA, match);
         root.addView(wallB, match);
 
-        // Apple TV subtle vignette
+        // Apple TV subtle backdrop vignette
         View scrim = new View(this);
         GradientDrawable sg = new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,
                 new int[]{0x22000000, 0x88000000});
@@ -161,7 +160,7 @@ public class MainActivity extends Activity {
 
         // Apple TV Modal "Apps" Folder Overlay
         folderOverlay = new FrameLayout(this);
-        folderOverlay.setBackgroundColor(0xD90E0E12); // Deep translucent tvOS blur shade
+        folderOverlay.setBackgroundColor(0xD90E0E12);
         folderOverlay.setVisibility(View.GONE);
         folderOverlay.setClickable(true);
         folderOverlay.setFocusable(false);
@@ -298,7 +297,7 @@ public class MainActivity extends Activity {
         Set<String> used = new HashSet<String>();
         used.add(getPackageName());
 
-        // 1. Build the Primary Apple TV Dock (pinned streaming apps)
+        // 1. Build Primary Dock
         for (Slot s : DOCK) {
             dock.addView(slotCell(s, 86, used));
         }
@@ -325,7 +324,7 @@ public class MainActivity extends Activity {
 
         // 3. Populate Modal App Library
         List<View> folderCells = new ArrayList<View>();
-        folderCells.add(slotCell(KODI, 72, used)); // Kodi included inside Library if not in dock
+        folderCells.add(slotCell(KODI, 72, used));
 
         for (final AppEntry e : apps) {
             folderCells.add(cell(e.label, e.info.loadIcon(pm), 72, false, new Runnable() {
@@ -352,7 +351,7 @@ public class MainActivity extends Activity {
             row.addView(folderCells.get(n));
         }
 
-        // 4. Append the "Apps" Folder tile to the end of the Dock
+        // 4. Append the "Apps" Folder tile to the Dock
         appsFolderTile = cell("Apps", folderTileIcon(), 86, false, new Runnable() {
             @Override
             public void run() {
@@ -404,128 +403,4 @@ public class MainActivity extends Activity {
         final LinearLayout c = new LinearLayout(this);
         c.setOrientation(LinearLayout.VERTICAL);
         c.setGravity(Gravity.CENTER_HORIZONTAL);
-        c.setPadding(dp(8), dp(10), dp(8), dp(8));
-        c.setFocusable(true);
-        c.setClickable(true);
-
-        ImageView iv = new ImageView(this);
-        iv.setImageDrawable(icon);
-        iv.setScaleType(ImageView.ScaleType.FIT_CENTER);
-        c.addView(iv, new LinearLayout.LayoutParams(dp(iconDp), dp(iconDp)));
-
-        TextView tv = new TextView(this);
-        tv.setText(label);
-        tv.setTextColor(Color.WHITE);
-        tv.setTextSize(13);
-        tv.setSingleLine(true);
-        tv.setEllipsize(TextUtils.TruncateAt.END);
-        tv.setGravity(Gravity.CENTER);
-        tv.setShadowLayer(4, 0, 1, 0xCC000000);
-        LinearLayout.LayoutParams tlp = new LinearLayout.LayoutParams(
-                dp(CELL_W_DP - 16), ViewGroup.LayoutParams.WRAP_CONTENT);
-        tlp.topMargin = dp(6);
-        c.addView(tv, tlp);
-
-        c.setAlpha(dim ? 0.45f : 1f);
-        c.setLayoutParams(new LinearLayout.LayoutParams(
-                dp(CELL_W_DP), ViewGroup.LayoutParams.WRAP_CONTENT));
-
-        c.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                action.run();
-            }
-        });
-        c.setOnFocusChangeListener(new View.OnFocusChangeListener() {
-            @Override
-            public void onFocusChange(View v, boolean has) {
-                float s = has ? 1.15f : 1f;
-                v.animate().scaleX(s).scaleY(s).setDuration(120).start();
-                v.setBackground(has ? round(0x44FFFFFF, dp(18)) : null);
-                v.setAlpha(dim ? (has ? 0.85f : 0.45f) : 1f);
-            }
-        });
-        return c;
-    }
-
-    // ---------------------------------------------------------------- graphics & tiles
-
-    private Drawable folderTileIcon() {
-        int size = 192;
-        Bitmap b = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
-        Canvas cv = new Canvas(b);
-
-        // Apple TV frosted app-folder tile background
-        Paint bgPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        bgPaint.setColor(0x40FFFFFF);
-        cv.drawRoundRect(new RectF(0, 0, size, size), 42, 42, bgPaint);
-
-        // 3x3 App Drawer icon matrix
-        Paint dotPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        dotPaint.setColor(0xEEFFFFFF);
-        float radius = 10f;
-        float[] coords = {54f, 96f, 138f};
-        for (float x : coords) {
-            for (float y : coords) {
-                cv.drawCircle(x, y, radius, dotPaint);
-            }
-        }
-        return new BitmapDrawable(getResources(), b);
-    }
-
-    private Drawable letterTile(String label, int color) {
-        int size = 192;
-        Bitmap b = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
-        Canvas cv = new Canvas(b);
-        Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
-        p.setColor(color);
-        cv.drawRoundRect(new RectF(0, 0, size, size), 40, 40, p);
-        p.setColor(Color.WHITE);
-        p.setTextSize(110);
-        p.setTextAlign(Paint.Align.CENTER);
-        p.setFakeBoldText(true);
-        Paint.FontMetrics fm = p.getFontMetrics();
-        float y = size / 2f - (fm.ascent + fm.descent) / 2f;
-        cv.drawText(label.substring(0, 1), size / 2f, y, p);
-        return new BitmapDrawable(getResources(), b);
-    }
-
-    // ---------------------------------------------------------------- launching
-
-    private void launch(Intent i) {
-        i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        try {
-            startActivity(i);
-        } catch (ActivityNotFoundException | SecurityException e) {
-            Toast.makeText(this, "Can't open that app", Toast.LENGTH_SHORT).show();
-        }
-    }
-
-    private void openStore(String pkg) {
-        Intent i = new Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=" + pkg));
-        i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        try {
-            startActivity(i);
-        } catch (ActivityNotFoundException e) {
-            Toast.makeText(this, "Not installed", Toast.LENGTH_SHORT).show();
-        }
-    }
-
-    // ---------------------------------------------------------------- helpers
-
-    private int dp(int v) {
-        return (int) (v * getResources().getDisplayMetrics().density + 0.5f);
-    }
-
-    private void noClip(ViewGroup g) {
-        g.setClipChildren(false);
-        g.setClipToPadding(false);
-    }
-
-    private Drawable round(int color, int radius) {
-        GradientDrawable gd = new GradientDrawable();
-        gd.setColor(color);
-        gd.setCornerRadius(radius);
-        return gd;
-    }
-}
+        c.setPadding(dp(8), dp(10), dp(8
