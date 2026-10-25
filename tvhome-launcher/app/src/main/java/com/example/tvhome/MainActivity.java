@@ -1,8 +1,10 @@
 package com.example.tvhome;
 
 import android.app.Activity;
+import android.app.ActivityManager;
 import android.content.ActivityNotFoundException;
 import android.content.ComponentName;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
@@ -35,12 +37,14 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 
 public class MainActivity extends Activity {
 
     private static final long ROTATE_MS = 10 * 60 * 1000L;
     private static final long FADE_MS = 3000L;
+    private static final long RAM_UPDATE_MS = 3000L; // Update RAM every 3 seconds
     private static final int FOLDER_COLS = 6;
     private static final int CELL_W_DP = 130;
 
@@ -82,10 +86,14 @@ public class MainActivity extends Activity {
 
     private final Handler handler = new Handler();
     private PackageManager pm;
+    private ActivityManager am;
+    private ActivityManager.MemoryInfo memInfo;
+
     private ImageView wallA, wallB;
     private boolean showingA = true;
     private int wallIdx = 0;
 
+    private TextView ramView;
     private LinearLayout dock;
     private FrameLayout folderOverlay;
     private LinearLayout folderGrid;
@@ -99,10 +107,20 @@ public class MainActivity extends Activity {
         }
     };
 
+    private final Runnable ramTask = new Runnable() {
+        @Override
+        public void run() {
+            updateRamUsage();
+            handler.postDelayed(this, RAM_UPDATE_MS);
+        }
+    };
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         pm = getPackageManager();
+        am = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
+        memInfo = new ActivityManager.MemoryInfo();
 
         FrameLayout root = new FrameLayout(this);
         root.setBackgroundColor(Color.BLACK);
@@ -130,17 +148,35 @@ public class MainActivity extends Activity {
         col.setPadding(dp(56), dp(36), dp(56), dp(40));
         noClip(col);
 
-        // Top Status Bar (Clock in top-right)
+        // Top Status Bar (RAM Pill on left of clock, Clock on far right)
+        LinearLayout statusBar = new LinearLayout(this);
+        statusBar.setOrientation(LinearLayout.HORIZONTAL);
+        statusBar.setGravity(Gravity.CENTER_VERTICAL);
+        LinearLayout.LayoutParams sblp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        sblp.gravity = Gravity.END;
+
+        ramView = new TextView(this);
+        ramView.setText("RAM --");
+        ramView.setTextColor(0xEEFFFFFF);
+        ramView.setTextSize(14);
+        ramView.setPadding(dp(12), dp(5), dp(12), dp(5));
+        ramView.setBackground(round(0x33000000, dp(14)));
+        LinearLayout.LayoutParams rlp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        rlp.rightMargin = dp(16);
+        statusBar.addView(ramView, rlp);
+
         TextClock clock = new TextClock(this);
         clock.setFormat12Hour("h:mm a");
         clock.setFormat24Hour("h:mm a");
         clock.setTextColor(0xDDFFFFFF);
         clock.setTextSize(26);
         clock.setShadowLayer(8, 0, 2, 0xCC000000);
-        LinearLayout.LayoutParams clp = new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        clp.gravity = Gravity.END;
-        col.addView(clock, clp);
+        statusBar.addView(clock, new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+
+        col.addView(statusBar, sblp);
 
         // Center / Bottom Dock Container
         dock = new LinearLayout(this);
@@ -208,12 +244,16 @@ public class MainActivity extends Activity {
         populate();
         handler.removeCallbacks(rotateTask);
         handler.postDelayed(rotateTask, ROTATE_MS);
+        
+        handler.removeCallbacks(ramTask);
+        handler.post(ramTask);
     }
 
     @Override
     protected void onPause() {
         super.onPause();
         handler.removeCallbacks(rotateTask);
+        handler.removeCallbacks(ramTask);
     }
 
     @Override
@@ -229,6 +269,26 @@ public class MainActivity extends Activity {
     public void onBackPressed() {
         if (folderOverlay.getVisibility() == View.VISIBLE) {
             closeFolder();
+        }
+    }
+
+    private void updateRamUsage() {
+        if (am == null || ramView == null) return;
+        am.getMemoryInfo(memInfo);
+
+        double totalGb = memInfo.totalMem / (1024.0 * 1024.0 * 1024.0);
+        double availGb = memInfo.availMem / (1024.0 * 1024.0 * 1024.0);
+        double usedGb = totalGb - availGb;
+        int pct = (int) Math.round((usedGb / totalGb) * 100);
+
+        ramView.setText(String.format(Locale.US, "RAM %.1f / %.1f GB (%d%%)", usedGb, totalGb, pct));
+
+        if (pct >= 90) {
+            ramView.setTextColor(0xFFFF5252); // Alert red
+        } else if (pct >= 80) {
+            ramView.setTextColor(0xFFFFD740); // Warning amber
+        } else {
+            ramView.setTextColor(0xEEFFFFFF); // Clean white
         }
     }
 
