@@ -237,11 +237,13 @@ public class MainActivity extends Activity {
         used.add(getPackageName());
 
         for (Slot s : DOCK) {
-            dock.addView(slotCell(s, 88, used));
+            View v = slotCell(s, 88, used);
+            if (v != null) dock.addView(v); // apps that aren't installed get no slot
         }
 
         List<View> cells = new ArrayList<View>();
-        cells.add(slotCell(KODI, 72, used));
+        View kodi = slotCell(KODI, 72, used);
+        if (kodi != null) cells.add(kodi);
 
         List<AppEntry> apps = new ArrayList<AppEntry>();
         Set<String> seen = new HashSet<String>();
@@ -289,7 +291,7 @@ public class MainActivity extends Activity {
         if (dock.getChildCount() > 0) dock.getChildAt(0).requestFocus();
     }
 
-    /** A dock/grid cell for a known app: real icon if installed, dimmed letter tile if not. */
+    /** A dock/grid cell for a known app, or null if the app isn't installed. */
     private View slotCell(final Slot s, int iconDp, Set<String> used) {
         String chosen = null;
         Intent launch = null;
@@ -318,12 +320,7 @@ public class MainActivity extends Activity {
                 }
             });
         }
-        return cell(s.label, letterTile(s.label, s.color), iconDp, true, new Runnable() {
-            @Override
-            public void run() {
-                openStore(s.pkgs[0]);
-            }
-        });
+        return null; // not installed: no placeholder
     }
 
     private View cell(String label, Drawable icon, int iconDp, final boolean dim, final Runnable action) {
