@@ -7,14 +7,27 @@ android {
     compileSdk 34
 
     defaultConfig {
-        applicationId 'com.example.tvhome'
+        applicationId 'com.example.tvhome2'
         minSdk 21
         targetSdk 28
         versionCode 1
         versionName '1.0'
     }
 
+    signingConfigs {
+        fixed {
+            storeFile file('tvhome.p12')
+            storePassword 'tvhome123'
+            keyAlias 'tvhome'
+            keyPassword 'tvhome123'
+            storeType 'pkcs12'
+        }
+    }
+
     buildTypes {
+        debug {
+            signingConfig signingConfigs.fixed
+        }
         release {
             minifyEnabled false
         }
