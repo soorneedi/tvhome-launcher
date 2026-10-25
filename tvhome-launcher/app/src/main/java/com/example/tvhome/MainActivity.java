@@ -148,7 +148,7 @@ public class MainActivity extends Activity {
         col.setPadding(dp(56), dp(36), dp(56), dp(40));
         noClip(col);
 
-        // Top Status Bar (RAM Pill on the left, Clock on the far right)
+        // Top Status Bar (RAM Pill on left, Clock on far right)
         LinearLayout statusBar = new LinearLayout(this);
         statusBar.setOrientation(LinearLayout.HORIZONTAL);
         statusBar.setGravity(Gravity.CENTER_VERTICAL);
@@ -467,13 +467,11 @@ public class MainActivity extends Activity {
         c.setFocusable(true);
         c.setClickable(true);
 
-        // Uniform squircle icon container
         ImageView iv = new ImageView(this);
         iv.setImageDrawable(maskToSquircle(icon, iconDp, 18));
         iv.setScaleType(ImageView.ScaleType.FIT_CENTER);
         c.addView(iv, new LinearLayout.LayoutParams(dp(iconDp), dp(iconDp)));
 
-        // Clean typography
         final TextView tv = new TextView(this);
         tv.setText(label);
         tv.setTextColor(0xDDFFFFFF);
@@ -598,6 +596,10 @@ public class MainActivity extends Activity {
 
     private int dp(int v) {
         return (int) (v * getResources().getDisplayMetrics().density + 0.5f);
+    }
+
+    private float dp(float v) {
+        return v * getResources().getDisplayMetrics().density;
     }
 
     private void noClip(ViewGroup g) {
